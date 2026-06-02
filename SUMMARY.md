@@ -1139,6 +1139,84 @@ deleteUser(5);          // ❌ 编译报错！int 不能当 UserId 用
 
 ---
 
+## 第47课：JSON 编解码 (dart:convert)
+
+```dart
+import 'dart:convert';
+
+// JSON → Dart
+var map = jsonDecode('{"name":"小明","age":25}') as Map<String, dynamic>;
+print(map['name']);  // 小明
+
+// Dart → JSON
+var json = jsonEncode({'name': '小红', 'age': 22});
+```
+
+**自定义类序列化：**
+```dart
+class Person {
+  String name; int age;
+
+  Map<String, dynamic> toJson() => {'name': name, 'age': age};
+
+  factory Person.fromJson(Map<String, dynamic> json) {
+    return Person(json['name'], json['age']);
+  }
+}
+
+var p = Person('小明', 25);
+jsonEncode(p.toJson());              // 对象 → JSON
+Person.fromJson(jsonDecode(jsonStr)); // JSON → 对象
+```
+
+**格式化输出：**
+```dart
+const JsonEncoder.withIndent('  ').convert(data);
+```
+
+**注意：**
+- jsonDecode 返回 `dynamic`，需用 `as` 转换
+- 嵌套对象要在 `toJson`/`fromJson` 里递归处理
+- 缺失字段用 `??` 给默认值
+- 自定义类如果没有 `toJson`，可以给 `jsonEncode` 传 `toEncodable` 回调
+
+---
+
+## 第46课：DateTime 日期时间处理
+
+```dart
+var now = DateTime.now();                                    // 当前时间
+var date = DateTime(2026, 6, 2);                             // 指定日期
+var parsed = DateTime.parse('2026-06-02');                   // 解析字符串
+var fromTs = DateTime.fromMillisecondsSinceEpoch(ts);        // 时间戳→日期
+```
+
+**读取各部分：**
+```dart
+dt.year  dt.month  dt.day  dt.hour  dt.minute  dt.second
+dt.weekday  // 1=周一, 7=周日
+```
+
+**计算：**
+```dart
+dt.add(Duration(days: 7));              // 加7天
+dt.subtract(Duration(days: 3));         // 减3天
+b.difference(a).inDays;                 // 相差天数
+DateTime(dt.year, dt.month + 1, dt.day); // 加1个月（注意进位）
+```
+
+**比较：**
+```dart
+a.isBefore(b)  a.isAfter(b)  a.isAtSameMomentAs(b)
+```
+
+**注意陷阱：**
+- `Duration` 没有 `months` 参数，加减月份需用构造函数
+- `==` 比较时刻而非日期，判断同一天要比较 `year+month+day`
+- `.parse()` 只认 ISO 8601 格式，其他格式需手动替换转换
+
+---
+
 # 常见疑问解答
 
 ## 类型相关
