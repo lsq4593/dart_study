@@ -1182,6 +1182,133 @@ const JsonEncoder.withIndent('  ').convert(data);
 
 ---
 
+## 第49课：正则表达式 (RegExp)
+
+```dart
+void main() {
+  // 创建正则：匹配手机号（11位数字）
+  var phoneReg = RegExp(r'^1[3-9]\d{9}$');
+
+  print(phoneReg.hasMatch('13812345678')); // true
+  print(phoneReg.hasMatch('12345'));       // false
+}
+```
+
+**用法：**
+
+```dart
+// 创建正则
+RegExp(r'模式');           // r 表示原始字符串，反斜杠不会转义
+RegExp('模式');            // 不写 r，\d 要写成 \\d（麻烦）
+
+// 常用方法
+reg.hasMatch('字符串');         // 是否匹配 → bool
+reg.firstMatch('字符串');       // 第一个匹配结果
+reg.allMatches('字符串');       // 所有匹配结果 → Iterable<RegExpMatch>
+reg.stringMatch('字符串');      // 返回匹配到的子串
+
+// 替换
+'abc123def'.replaceAll(RegExp(r'\d+'), 'X');  // abcXdef
+```
+
+**常用正则模式：**
+
+| 模式 | 含义 | 例子 |
+|------|------|------|
+| `\d` | 数字 | `r'\d+'` → 匹配连续数字 |
+| `\w` | 字母/数字/下划线 | `r'\w+'` → 匹配单词 |
+| `\s` | 空白字符（空格/换行/tab） | `r'\s+'` → 匹配空白 |
+| `.` | 任意字符（除换行） | `r'.+'` → 匹配任何内容 |
+| `*` | 前一个出现 0 次或多次 | `r'\d*'` |
+| `+` | 前一个出现 1 次或多次 | `r'\d+'` |
+| `?` | 前一个出现 0 次或 1 次 | `r'\d?'` |
+| `{n}` | 恰好 n 次 | `r'\d{11}'` → 11位数字 |
+| `{n,}` | 至少 n 次 | `r'\d{3,}'` |
+| `{n,m}` | n 到 m 次 | `r'\d{3,5}'` |
+| `^` | 开头 | `r'^hello'` |
+| `$` | 结尾 | `r'world$'` |
+| `[abc]` | 字符集合 | `r'[aeiou]'` → 匹配任意元音 |
+| `[a-z]` | 字符范围 | `r'[0-9]'` = `\d` |
+| `[^abc]` | 排除 | `r'[^0-9]'` → 匹配非数字 |
+| `()` | 分组捕获 | `r'(\d{4})-(\d{2})'` |
+
+**对比：RegExp vs 字符串方法**
+
+| 场景 | 字符串方法 | RegExp |
+|------|-----------|--------|
+| 是否包含某子串 | `s.contains('abc')` | `reg.hasMatch(s)` |
+| 替换固定字符 | `s.replaceAll('a', 'b')` | `s.replaceAll(RegExp(r'a'), 'b')` |
+| 验证格式（邮箱/手机） | ❌ 做不到 | ✅ `r'^1[3-9]\d{9}$'` |
+| 提取复杂模式 | `s.substring` 太麻烦 | ✅ `reg.allMatches` |
+
+**注意：**
+- 创建正则时**务必写 `r`** 前缀，不然 `\d` 要写成 `\\d`，很痛苦
+- `hasMatch` 只检查是否匹配，`allMatches` 能拿到匹配位置和分组
+- 分组用 `match.group(1)` 取值，`match.group(0)` 是整个匹配
+
+---
+
+## 第48课：文件读写 (dart:io)
+
+```dart
+import 'dart:io';
+
+void main() async {
+  // 写入文件
+  var file = File('test.txt');
+  await file.writeAsString('Hello, Dart!');
+
+  // 读取文件
+  var content = await file.readAsString();
+  print(content); // Hello, Dart!
+}
+```
+
+**用法：**
+
+```dart
+// 创建/写入（覆盖）
+await File('路径').writeAsString('内容');
+
+// 追加写入
+await File('路径').writeAsString('追加内容', mode: FileMode.append);
+
+// 读取全部内容
+String content = await File('路径').readAsString();
+
+// 按行读取
+List<String> lines = await File('路径').readAsLines();
+
+// 读取二进制
+List<int> bytes = await File('路径').readAsBytes();
+
+// 判断文件是否存在
+bool exists = await File('路径').exists();
+
+// 删除文件
+await File('路径').delete();
+
+// 复制文件
+await File('源路径').copy('目标路径');
+```
+
+**对比：同步 vs 异步文件操作**
+
+| | 同步方法 | 异步方法 |
+|---|---|---|
+| 读字符串 | `readAsStringSync()` | `readAsString()` |
+| 写字符串 | `writeAsStringSync()` | `writeAsString()` |
+| 按行读 | `readAsLinesSync()` | `readAsLines()` |
+| 适合场景 | 小文件、命令行脚本 | 大文件、不阻塞 UI |
+
+**注意：**
+- `dart:io` 只能在**非 Web** 平台使用（CLI、服务器、Flutter）
+- 路径可以是相对路径或绝对路径
+- 文件不存在时读文件会抛 `FileSystemException`
+- 用 `try-catch` 包裹文件操作，防止崩溃
+
+---
+
 ## 第46课：DateTime 日期时间处理
 
 ```dart
