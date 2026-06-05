@@ -1309,6 +1309,391 @@ await File('源路径').copy('目标路径');
 
 ---
 
+## 第50课：排序与 Comparable
+
+```dart
+void main() {
+  var nums = [3, 1, 4, 1, 5];
+  nums.sort();                    // 默认升序 [1, 1, 3, 4, 5]
+
+  var names = ['小明', '小红', '小刚'];
+  names.sort((a, b) => b.compareTo(a));  // 降序
+}
+```
+
+**Comparable 接口：**
+```dart
+class Student implements Comparable<Student> {
+  String name;
+  int score;
+  @override
+  int compareTo(Student other) => score.compareTo(other.score);
+}
+
+var students = [Student('小明', 85), Student('小红', 92)];
+students.sort();  // 按分数排序
+```
+
+**对比：`sort()` 的两种用法**
+
+| | 类实现 Comparable | 传入 Comparator |
+|---|---|---|
+| 写法 | `list.sort()` | `list.sort((a, b) => ...)` |
+| 排序规则 | 固定写死在类里 | 临时决定 |
+| 多种排序 | ❌ 只有一种 | ✅ 随时换规则 |
+
+**Comparator 返回值规则：**
+- `a.compareTo(b) < 0` → a 排在 b 前面（升序）
+- `a.compareTo(b) > 0` → a 排在 b 后面（降序）
+- `a.compareTo(b) == 0` → 相等
+
+---
+
+## 第51课：Timer 定时器
+
+```dart
+import 'dart:async';
+
+void main() {
+  // 2秒后执行一次
+  Timer(Duration(seconds: 2), () {
+    print('2秒到了');
+  });
+
+  // 每秒执行一次，执行5次后取消
+  int count = 0;
+  Timer.periodic(Duration(seconds: 1), (timer) {
+    count++;
+    print('第$count秒');
+    if (count >= 5) timer.cancel();
+  });
+}
+```
+
+**用法：**
+
+```dart
+// 延迟执行一次
+Timer(Duration(seconds: 3), () => print('3秒后'));
+
+// 定时重复执行
+Timer.periodic(Duration(seconds: 1), (timer) {
+  print('每秒一次');
+});
+
+// 取消定时器
+var timer = Timer(Duration(seconds: 10), () => print('不会执行'));
+timer.cancel();  // 取消后回调不会触发
+
+// 判断是否还在运行
+timer.isActive  // true = 还没执行/还没取消
+```
+
+**对比：Timer vs Future.delayed**
+
+| | Timer | Future.delayed |
+|---|---|---|
+| 延迟执行 | ✅ `Timer(3s, fn)` | ✅ `Future.delayed(3s, fn)` |
+| 重复执行 | ✅ `Timer.periodic` | ❌ 不能 |
+| 取消 | ✅ `timer.cancel()` | ❌ 不能取消 |
+| 使用场景 | 定时任务、倒计时 | 延迟一次且不需要取消 |
+
+**注意：**
+- `dart:async` 自动导入，不需要写 `import`
+- 定时器回调结束后 Timer 对象会被回收
+- `Timer.periodic` 记得在条件满足时 `cancel()`，否则一直运行
+- 取消后的 Timer 再调 `cancel()` 不会报错（幂等）
+
+---
+
+## 第52课：StreamController 流控制
+
+```dart
+import 'dart:async';
+
+void main() {
+  // 创建控制器
+  var controller = StreamController<int>();
+
+  // 监听流
+  controller.stream.listen((data) {
+    print('收到: $data');
+  });
+
+  // 往流里添加数据
+  controller.add(1);
+  controller.add(2);
+  controller.add(3);
+
+  // 关闭流
+  controller.close();
+}
+```
+
+**用法：**
+
+```dart
+var c = StreamController<int>();
+
+c.stream.listen(回调);         // 监听数据
+c.add(值);                     // 添加单个数据
+c.addStream(另一个Stream);      // 添加整个流
+c.done                         // Future，流关闭后触发
+c.close();                     // 关闭，不再接收新数据
+```
+
+**对比：async* vs StreamController**
+
+| | async* / yield | StreamController |
+|---|---|---|
+| 数据源控制 | 内部固定（函数内 yield） | **外部手动** add |
+| 适用场景 | 数据由函数内部产生 | 数据来自外部事件（按钮点击、WebSocket） |
+| 灵活性 | 低，数据产生逻辑固定 | 高，任何地方都能 add |
+| 代码量 | 少 | 多 |
+
+**注意：**
+- 一个 `StreamController` 只能被**监听一次**（默认情况）
+- 用完后必须 `close()`，否则会内存泄漏
+- 可以设置 `onCancel` 回调，在监听者取消时清理资源
+- `StreamController.broadcast()` 创建广播流，允许多次监听
+
+---
+
+## 第53课：增强枚举（带字段和方法）
+
+```dart
+enum StatusCode {
+  success(200, '成功'),
+  notFound(404, '未找到'),
+  error(500, '服务器错误');
+
+  final int code;
+  final String message;
+  const StatusCode(this.code, this.message);
+
+  bool get isOk => code < 400;
+  String format() => '[$code] $message';
+}
+
+void main() {
+  var s = StatusCode.success;
+  print(s.code);     // 200
+  print(s.message);  // 成功
+  print(s.isOk);     // true
+  print(s.format()); // [200] 成功
+}
+```
+
+**用法：**
+
+```dart
+enum Color {
+  red(0xFF0000),
+  green(0x00FF00),
+  blue(0x0000FF);
+
+  final int hex;
+  const Color(this.hex);
+
+  String get hexStr => '#${hex.toRadixString(16).padLeft(6, '0')}';
+}
+
+print(Color.red.hexStr);  // #ff0000
+```
+
+**对比：普通枚举 vs 增强枚举**
+
+| | 普通枚举 | 增强枚举 |
+|---|---|---|
+| 字段 | ❌ 不能 | ✅ 可以有 |
+| 方法 | ❌ 不能 | ✅ 可以有 |
+| getter/setter | ❌ 不能 | ✅ 可以有 |
+| 实现接口 | ❌ 不能 | ✅ 可以 `implements` |
+| 适用场景 | 简单的常量列表 | 需要附带数据或行为的枚举 |
+
+**注意：**
+- 构造函数必须是 `const`
+- 所有枚举值在类体最后列出，用 `;` 结尾
+- 值之间用 `,` 分隔，最后一个用 `;`
+- 可以加 getter、方法、甚至实现接口
+
+---
+
+## 第54课：sync* 同步生成器
+
+```dart
+void main() {
+  // sync* 返回 Iterable，数据随取随生成
+  for (var n in countTo(5)) {
+    print(n);  // 1 2 3 4 5
+  }
+}
+
+// sync* 生成器：每次 yield 一个值，惰性求值
+Iterable<int> countTo(int n) sync* {
+  for (int i = 1; i <= n; i++) {
+    yield i;
+  }
+}
+```
+
+**对比：sync* vs async\***
+
+| | sync* | async\* |
+|---|---|---|
+| 返回类型 | `Iterable<T>` | `Stream<T>` |
+| 求值方式 | **惰性**（用到才生成） | **惰性**（有人监听才生成） |
+| 等待 | 同步，不 await | 异步，可 await |
+| yield 语法 | 相同 | 相同 |
+| 适用场景 | 大量数据的惰性计算 | 异步事件流 |
+
+**惰性求值：**
+
+```dart
+Iterable<int> numbers() sync* {
+  print('生成1');
+  yield 1;
+  print('生成2');
+  yield 2;
+  print('生成3');
+  yield 3;
+}
+
+var it = numbers().iterator;
+it.moveNext(); print(it.current);  // 打印"生成1"和"1"
+it.moveNext(); print(it.current);  // 打印"生成2"和"2"
+// 每次只生成一个，用多少算多少
+```
+
+**注意：**
+- sync* 函数用 `Iterable` 作为返回类型
+- 用 `yield` 返回值，可以多次
+- 也可以用 `yield*` 委托给另一个 Iterable
+- 适合生成大量数据（斐波那契、分页遍历），避免一次性加载到内存
+
+---
+
+## 第55课：Process 进程（执行系统命令）
+
+```dart
+import 'dart:io';
+
+void main() async {
+  // 执行命令并获取输出
+  var result = await Process.run('dart', ['--version']);
+  print(result.stdout);  // Dart SDK version...
+
+  // 实时输出
+  var process = await Process.start('ping', ['127.0.0.1', '-n', '3']);
+  await for (var line in process.stdout.transform(utf8.decoder)) {
+    print(line);
+  }
+}
+```
+
+**用法：**
+
+```dart
+// 方式一：一次性获取结果（简单）
+var r = await Process.run('命令', ['参数1', '参数2']);
+r.stdout      // 标准输出（String）
+r.stderr      // 错误输出（String）
+r.exitCode    // 退出码（0=成功）
+
+// 方式二：实时流式输出（适合长时间运行的命令）
+var p = await Process.start('命令', ['参数']);
+p.stdout        // Stream<List<int>>，需要解码
+p.stderr        // 错误输出流
+p.stdin         // 向进程输入
+p.kill();       // 终止进程
+await p.exitCode;  // 等待进程结束
+```
+
+**对比：Process.run vs Process.start**
+
+| | Process.run | Process.start |
+|---|---|---|
+| 返回 | 一次性拿到全部输出 | 流式输出 |
+| 适合 | 快速命令、结果短 | 长时间运行、需要实时看输出 |
+| 使用场景 | `git status`、`dart --version` | `ping`、`build`、`serve` |
+
+**注意：**
+- `stdout` 是二进制流 `Stream<List<int>>`，需要用 `utf8.decoder` 转字符串
+- `run` 默认把 stdout/stderr 合并成字符串，适合短输出
+- `exitCode` 为 0 表示成功，非 0 表示出错
+- 用 `kill()` 强制终止进程，用 `exitCode` 等待自然结束
+
+---
+
+## 第56课：Uri 类（URL 解析与构建）
+
+```dart
+void main() {
+  // 解析 URL
+  var uri = Uri.parse('https://example.com/path?a=1&b=2#section');
+  print(uri.scheme);     // https
+  print(uri.host);       // example.com
+  print(uri.path);       // /path
+  print(uri.query);      // a=1&b=2
+  print(uri.fragment);   // section
+
+  // 构建 URL
+  var url = Uri(
+    scheme: 'https',
+    host: 'api.example.com',
+    path: '/users',
+    queryParameters: {'page': '1', 'size': '20'},
+  );
+  print(url);  // https://api.example.com/users?page=1&size=20
+}
+```
+
+**用法：**
+
+```dart
+// 解析
+Uri.parse('https://user:pass@host:8080/path?q=1#top')
+uri.scheme        // https
+uri.host          // host
+uri.port          // 8080
+uri.userInfo      // user:pass
+uri.path          // /path
+uri.query         // q=1
+uri.queryParameters  // {'q': '1'}
+uri.fragment      // top
+
+// 构建
+Uri(
+  scheme: 'https',
+  host: 'example.com',
+  path: '/search',
+  queryParameters: {'q': 'dart', 'page': '1'},
+)
+
+// 编码/解码
+Uri.encodeComponent('你好')   // %E4%BD%A0%E5%A5%BD
+Uri.decodeComponent('%E4%BD%A0%E5%A5%BD')  // 你好
+
+// 相对路径
+Uri.base.resolve('../other/file.txt')
+```
+
+**对比：Uri.parse vs Uri 构造函数**
+
+| | Uri.parse | Uri() 构造函数 |
+|---|---|---|
+| 用途 | 从字符串解析 | 用参数构建 |
+| 参数 | 一个 URL 字符串 | 分别传 scheme/host/path... |
+| 适用 | 处理已有 URL | 动态构造 URL |
+
+**注意：**
+- `Uri` 是 `dart:core` 里的类，**不需要 import**
+- `.queryParameters` 返回 `Map<String, String>`，重复的 key 会合并
+- 中文等特殊字符用 `Uri.encodeComponent()` 编码
+- `Uri.base` 获取当前脚本所在目录
+
+---
+
 ## 第46课：DateTime 日期时间处理
 
 ```dart
