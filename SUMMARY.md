@@ -1694,6 +1694,492 @@ Uri.base.resolve('../other/file.txt')
 
 ---
 
+## 第57课：自定义异常
+
+```dart
+class ValidationException implements Exception {
+  final String message;
+  final String field;
+  ValidationException(this.message, this.field);
+
+  @override
+  String toString() => '[$field] $message';
+}
+
+void main() {
+  try {
+    validateAge(-5);
+  } on ValidationException catch (e) {
+    print(e);  // [age] 年龄不能为负数
+  }
+}
+
+void validateAge(int age) {
+  if (age < 0) throw ValidationException('年龄不能为负数', 'age');
+}
+```
+
+**用法：**
+
+```dart
+// 定义
+class MyException implements Exception {
+  final String message;
+  MyException(this.message);
+  @override
+  String toString() => message;
+}
+
+// 抛出
+throw MyException('出错了');
+
+// 捕获
+try {
+  doSomething();
+} on MyException catch (e) {
+  print(e.message);
+}
+```
+
+**对比：Exception vs Error**
+
+| | Exception | Error |
+|---|---|---|
+| 含义 | 可处理的异常 | 程序 bug，不该捕获 |
+| 例子 | 网络超时、参数校验失败 | 空指针、越界 |
+| 父类 | `Exception` | `Error` |
+| 是否捕获 | ✅ 应该用 try-catch 处理 | ❌ 应该修代码 |
+
+**注意：**
+- 自定义异常类用 `implements Exception`（不是 `extends`）
+- 重写 `toString()` 让错误信息更清晰
+- 可以用多个 `on` 分支捕获不同类型的异常
+- `rethrow` 把异常往上抛，由外层处理
+
+---
+
+## 第58课：Isolate 通信（SendPort / ReceivePort）
+
+```dart
+import 'dart:isolate';
+
+void main() async {
+  // 创建一个 ReceivePort 来接收消息
+  var receiver = ReceivePort();
+
+  // 启动 Isolate，把 receiver.sendPort 传过去
+  await Isolate.spawn(worker, receiver.sendPort);
+
+  // 接收 Isolate 发来的消息
+  var msg = await receiver.first;
+  print('收到: $msg');
+}
+
+void worker(SendPort sendPort) {
+  sendPort.send('你好，从 Isolate 发来的消息');
+}
+```
+
+**通信方式：**
+
+```dart
+// 主 Isolate
+var receiver = ReceivePort();
+await Isolate.spawn(worker, receiver.sendPort);
+var msg = await receiver.first;    // 等一条消息
+
+// 工作 Isolate
+void worker(SendPort sendPort) {
+  sendPort.send('消息');           // 发回主 Isolate
+}
+```
+
+**对比：isolate.run vs 手动通信**
+
+| | `Isolate.run` | 手动 SendPort/ReceivePort |
+|---|---|---|
+| 返回结果 | 一次性返回值 | **多次**收发消息 |
+| 双向通信 | ❌ 不能 | ✅ 可以来回通信 |
+| 适用场景 | 一次计算出结果 | 持续交互、流式数据 |
+
+**注意：**
+- `SendPort` 只能发消息，`ReceivePort` 只能收消息
+- 传过去的参数必须是**可跨 Isolate 的**（基本类型、List、Map、SendPort）
+- 建立双向通信：工作 Isolate 也要有自己的 `ReceivePort`，把它的 `sendPort` 传回主 Isolate
+- Isolate 之间不共享内存，只能通过消息传递
+
+---
+
+## 第59课：StringBuffer 高效字符串拼接
+
+```dart
+void main() {
+  // StringBuffer：累积字符串，最后一次性取结果
+
+  var sb = StringBuffer();
+  sb.write('Hello');
+  sb.write(' ');
+  sb.write('Dart');
+  sb.writeAll(['!', ' ', '你好']);
+
+  print(sb.toString());  // Hello Dart! 你好
+}
+```
+
+**用法：**
+
+```dart
+var sb = StringBuffer();
+
+sb.write('内容');           // 追加字符串
+sb.writeln('行');           // 追加并换行
+sb.writeAll(['a', 'b']);    // 追加列表所有元素
+sb.writeAll(['a', 'b'], ', '); // 用分隔符连接
+sb.clear();                 // 清空
+
+sb.isEmpty;                 // 是否为空
+sb.isNotEmpty;              // 是否不为空
+sb.length;                  // 当前字符数
+
+sb.toString();              // 取出最终字符串
+```
+
+**对比：字符串拼接 vs StringBuffer**
+
+| | `+` 拼接 | `StringBuffer` |
+|---|---|---|
+| 性能 | 慢（每次创建新字符串） | **快**（内部缓冲区） |
+| 适合 | 少量（3-5个）拼接 | **大量**（循环拼接） |
+| 代码 | `str1 + str2 + str3` | `sb.write(a)..write(b)..write(c)` |
+
+**为什么 StringBuffer 快？**
+
+```dart
+// 用 +：每次创建新字符串，复制全部内容
+var s = '';
+for (int i = 0; i < 10000; i++) {
+  s += '第$i行\n';  // 复制越来越长的字符串 → 慢
+}
+
+// 用 StringBuffer：累积到缓冲区，最后一次性创建
+var sb = StringBuffer();
+for (int i = 0; i < 10000; i++) {
+  sb.writeln('第$i行');  // 只写到缓冲区 → 快
+}
+var s = sb.toString();  // 最后才创建字符串
+```
+
+---
+
+## 第60课：dart:collection 集合类型深入
+
+```dart
+import 'dart:collection';
+
+void main() {
+  // Queue — 先进先出（排队）
+  var queue = Queue<String>();
+  queue.addLast('甲');  // 排队
+  queue.addLast('乙');
+  queue.addLast('丙');
+  print(queue.removeFirst());  // 甲（先排的先处理）
+
+  // HashMap / LinkedHashMap / SplayTreeMap
+  var hash   = HashMap<int, String>();   // 无序（最快）
+  var linked = LinkedHashMap<int, String>(); // 按插入顺序
+  var tree   = SplayTreeMap<int, String>();  // 按键排序
+
+  // HashSet / LinkedHashSet / SplayTreeSet
+  var hSet = HashSet<int>();       // 无序
+  var lSet = LinkedHashSet<int>(); // 按插入顺序
+  var tSet = SplayTreeSet<int>();  // 排序
+
+  // 不可变包装
+  var list = [1, 2, 3];
+  var unmodifiable = UnmodifiableListView(list);
+  // unmodifiable[0] = 99;  // ❌ 运行时报错
+}
+```
+
+**对比：Map 的三种实现**
+
+| | HashMap | LinkedHashMap | SplayTreeMap |
+|---|---|---|---|
+| 顺序 | 无序 | **插入顺序** | **键排序** |
+| 性能 | 最快 | 和 HashMap 接近 | 略慢 |
+| 默认 Map 是？ | ❌ | ✅ `Map()` 就是它 |
+
+**对比：Set 的三种实现**
+
+| | HashSet | LinkedHashSet | SplayTreeSet |
+|---|---|---|---|
+| 顺序 | 无序 | **插入顺序** | **排序** |
+| 默认 Set 是？ | ❌ | ✅ `Set()` 就是它 |
+
+**Queue 核心操作：**
+
+```dart
+queue.addFirst(e)   // 队首添加
+queue.addLast(e)    // 队尾添加（默认）
+queue.removeFirst() // 取队首
+queue.removeLast()  // 取队尾
+queue.first         // 看队首不移除
+queue.last          // 看队尾不移除
+```
+
+**注意：**
+- `Queue` 适合"先进先出"的场景（排队、任务调度）
+- `UnmodifiableListView` 只是运行时保护，编译时不会报错
+- `SplayTreeMap` 的键必须实现 `Comparable`（或传比较函数）
+
+---
+
+## 第61课：NoSuchMethod（拦截不存在的方法）
+
+```dart
+class Proxy {
+  @override
+  void noSuchMethod(Invocation invocation) {
+    print('调用了不存在的方法: ${invocation.memberName}');
+    print('参数: ${invocation.positionalArguments}');
+  }
+}
+
+void main() {
+  // 把 Proxy 当成任意类型用
+  dynamic proxy = Proxy();
+  proxy.sayHello('小明');  // 不会崩溃，进 noSuchMethod
+  proxy.add(1, 2);
+}
+```
+
+**用法：**
+
+```dart
+class MyProxy {
+  @override
+  void noSuchMethod(Invocation inv) {
+    if (inv.memberName == #sayHello) {
+      print('你好, ${inv.positionalArguments[0]}');
+    } else {
+      super.noSuchMethod(inv);  // 不处理的交给默认逻辑
+    }
+  }
+}
+```
+
+**Invocation 的属性和方法：**
+
+```dart
+inv.memberName           // 方法名（Symbol）
+inv.positionalArguments  // 位置参数列表
+inv.namedArguments       // 命名参数 Map
+inv.isMethod             // 是否是方法调用
+inv.isGetter             // 是否是 getter
+inv.isSetter             // 是否是 setter
+inv.typeArguments        // 泛型类型参数
+```
+
+**注意：**
+- 类必须声明 `dynamic` 类型才能触发 `noSuchMethod`
+- 需要加 `@override` 覆盖
+- 不处理的方法调 `super.noSuchMethod(inv)` 抛默认异常
+- 适合做代理、Mock、动态接口
+
+---
+
+## 第62课：模式匹配进阶（guards、null-check、switch 模式）
+
+```dart
+void main() {
+  // Guard（when）：匹配时加额外条件
+  (int a, int b) pair = (2, 3);
+  switch (pair) {
+    case (int x, int y) when x == y:
+      print('相等');
+    case (int x, int y) when x > y:
+      print('x 大');
+    case (int x, int y):
+      print('y 大');
+  }
+
+  // Null-check / null-assert 模式
+  String? name = '小明';
+  if (name case var n?) {
+    print('有值: $n');  // 只有非 null 才匹配
+  }
+
+  // List 解构
+  var list = [1, 2, 3, 4, 5];
+  var [a, b, ...rest] = list;
+  print('$a, $b, $rest');  // 1, 2, [3, 4, 5]
+
+  // Map 解构
+  var map = {'name': '小明', 'age': 25};
+  var {'name': name2, 'age': age2} = map;
+  print('$name2, $age2');
+}
+```
+
+**用法：**
+
+```dart
+// Guard — when 关键字
+case (int x, int y) when x + y > 10:
+case (int x) when x.isEven:
+
+// Null-check — 变量名?
+String? s = 'hello';
+if (s case var v?) { print('非空: $v'); }
+
+// 剩余元素 — ...
+var [first, ...rest] = [1, 2, 3, 4];
+var [...all, last] = [1, 2, 3];  // rest + last
+
+// 嵌套解构
+var json = {'user': {'name': '小明', 'age': 25}};
+var {'user': {'name': n, 'age': a}} = json;
+```
+
+**对比：**
+
+| 模式 | 用途 | 例子 |
+|------|------|------|
+| `when` | 匹配后加条件 | `case (x, y) when x > y:` |
+| `var n?` | 非 null 才匹配 | `if (s case var v?)` |
+| `...` | 剩余元素 | `var [a, ...rest] = list` |
+| 嵌套解构 | 深层提取 | `{'a': {'b': x}}` |
+
+---
+
+## 第63课：注解（Annotations / 元数据）
+
+```dart
+// 定义注解
+class Deprecated {
+  final String message;
+  const Deprecated(this.message);
+}
+
+// 使用注解
+@Deprecated('请使用新方法')
+void oldMethod() { }
+
+void main() {
+  // 读取注解
+  var obj = oldMethod;
+  var metadata = obj.metadata;
+  for (var m in metadata) {
+    if (m is Deprecated) {
+      print(m.message);  // 请使用新方法
+    }
+  }
+}
+```
+
+**定义注解：**
+
+```dart
+// 注解就是普通的类，构造函数必须是 const
+class Required { const Required(); }
+class Range { final int min, max; const Range(this.min, this.max); }
+class Length { final int min, max; const Length({this.min = 0, this.max = 100}); }
+```
+
+**使用注解：**
+
+```dart
+@Required()
+@Range(min: 1, max: 100)
+@Length(min: 2, max: 10)
+String name = '';
+```
+
+**读取注解（反射）：**
+
+```dart
+import 'dart:mirrors';  // 需要反射库
+
+// 或通过 Type 对象
+var type = SomeClass;
+for (var m in type.metadata) {
+  if (m is MyAnnotation) { ... }
+}
+```
+
+**对比：注解 vs 普通类**
+
+| | 注解 | 普通类 |
+|---|---|---|
+| 构造函数 | **必须 const** | 可以不 const |
+| 放在哪 | 类/方法/字段前面加 `@` | new 对象 |
+| 作用 | 附加元数据 | 实例化使用 |
+| 读取 | 通过反射或代码生成 | 直接调用 |
+
+**注意：**
+- 注解类构造函数必须 `const`
+- `dart:mirrors` 在 Flutter 和 Web 上不可用
+- 广泛用于代码生成（json_serializable、freezed）
+- Dart 内置注解：`@override`、`@deprecated`、`@pragma`
+
+---
+
+## 第64课：异步进阶 — Future 组合与超时处理
+
+```dart
+Future.wait([fetchUser(), fetchOrders()]);   // 等所有完成
+Future.any([sourceA(), sourceB()]);           // 谁先完成用谁
+future.timeout(Duration(seconds: 2));         // 超时处理
+Future.delayed(Duration(seconds: 1), fn);     // 延迟执行
+Future.value('data');                          // 直接创建成功 Future
+Future.error(Exception('错'));                 // 直接创建失败 Future
+Future.sync(() => '同步结果');                 // 同步执行包装为 Future
+Future.forEach([1, 2, 3], (i) async {});       // 顺序异步遍历
+```
+
+**对比：顺序 vs 并发**
+
+```dart
+// 顺序执行 — 总耗时 = 累加
+var a = await taskA();  // 800ms
+var b = await taskB();  // + 500ms = 1300ms
+
+// 并发执行 — 总耗时 = 最慢的
+var [a, b] = await Future.wait([taskA(), taskB()]);  // max(800, 500) = 800ms
+```
+
+**实际模式：**
+
+```dart
+// 失败重试
+for (int i = 0; i < 3; i++) {
+  try { result = await api(); break; }
+  catch (e) { if (i < 2) await Future.delayed(退避时间); }
+}
+
+// 并发限流（分批）
+var batches = chunked(tasks, 2);  // 每批 2 个
+for (var batch in batches) {
+  await Future.wait(batch.map((t) => t()));
+}
+
+// 超时 + 重试组合
+for (int i = 0; i < 3; i++) {
+  try {
+    result = await api().timeout(1.seconds, onTimeout: () => throw ...);
+    break;
+  } catch (e) { /* 重试 */ }
+}
+```
+
+**注意：**
+- `Future.wait` 是**并发**，不是顺序，多个 Future 同时跑
+- 超时时间要根据业务设置，太短容易误判
+- 重试要加退避（backoff），避免打爆服务器
+- 并发数要合理（一般 3-5 个），太多会耗尽资源
+
+---
+
 ## 第46课：DateTime 日期时间处理
 
 ```dart
