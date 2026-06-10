@@ -2222,6 +2222,51 @@ Point(3, 4).distanceTo(Point(6, 8));  // 5.0
 
 ---
 
+## 第66课：Completer — 手动控制 Future
+
+```dart
+var c = Completer<String>();
+var future = c.future;     // 拿到关联的 Future
+
+// 在任意地方手动完成它
+c.complete('数据');         // 成功
+c.completeError(Exception('错'));  // 失败
+
+c.isCompleted              // 检查是否已完成（防止重复 complete）
+
+await future;              // 正常等结果
+```
+
+**最常用的场景：回调函数 → Future**
+
+```dart
+// 改造前：回调风格
+void loadData(void Function(String) onOk, void Function(Object) onErr);
+
+// 改造后：返回 Future
+Future<String> loadDataAsync() {
+  var c = Completer<String>();
+  loadData(c.complete, c.completeError);
+  return c.future;
+}
+```
+
+**对比：async 函数 vs Completer**
+
+| | async 函数 | Completer |
+|---|---|---|
+| 谁控制完成 | 函数内部自动 | **你手动调用 complete()** |
+| 适合场景 | 逻辑在函数内 | 回调触发、外部事件 |
+| 风险 | 安全 | 忘了 complete 就永远挂起 |
+
+**注意：**
+- 一个 Completer 只能 complete **一次**，重复调用报错
+- 用 `.isCompleted` 判断是否已完成
+- 忘了 complete 会导致 Future 永久 pending，**内存泄漏**
+- `StreamController` 内部就是用 Completer 实现的
+
+---
+
 ## 第46课：DateTime 日期时间处理
 
 ```dart
