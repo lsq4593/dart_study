@@ -2331,6 +2331,65 @@ Stream<T> throttle<T>(Stream<T> source, Duration d) {
 
 ---
 
+## 第68课：Zone — 区域隔离与错误捕获
+
+```dart
+// 🏛️ dart:async API
+
+// 隔离错误，不崩程序
+runZoned(() {
+  throw Exception('出错了');
+}, onError: (error, stack) {
+  print('捕获: $error');
+});
+
+// 根区域保护（兜底所有未捕获异常）
+runZonedGuarded(() {
+  // 主程序
+}, (error, stack) {
+  // 上报错误日志
+});
+
+// 传递上下文（类似"线程局部变量"）
+runZoned(() {
+  var user = Zone.current['user'];  // 取出
+}, zoneValues: {'user': '小明'});
+
+// 拦截 print/Timer 等操作
+ZoneSpecification(
+  print: (self, parent, zone, line) {
+    parent.print(zone, '[日志] $line');
+  },
+);
+```
+
+**对比：try-catch vs Zone**
+
+| | try-catch | Zone |
+|---|---|---|
+| 捕获范围 | 同一代码块 | **整个区域（含异步）** |
+| 跨异步错误？ | ❌ 不能 | ✅ 能 |
+| 传递上下文 | ❌ 需要参数传 | ✅ `zoneValues` |
+| 拦截操作 | ❌ | ✅ 拦截 print/Timer 等 |
+
+**实用模式：链路追踪**
+```dart
+runZoned(
+  () => fetchData('/api/user'),
+  zoneValues: {'requestId': 'REQ-001'},
+);
+
+// fetchData 内部从 Zone.current['requestId'] 取值
+```
+
+**注意：**
+- `runZoned` 的 `onError` 只捕获 Zone 内错误
+- `runZonedGuarded` 捕获所有未捕获异常（推荐的 main 入口写法）
+- `zoneValues` 用 `[键]` 取值，键可以是 String 或 Symbol
+- 忘了 `onError`，Zone 里的错误还是会崩程序
+
+---
+
 ## 第46课：DateTime 日期时间处理
 
 ```dart
