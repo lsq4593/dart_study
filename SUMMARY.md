@@ -2267,6 +2267,70 @@ Future<String> loadDataAsync() {
 
 ---
 
+## 第67课：Stream 进阶 — 转换、过滤、广播
+
+```dart
+stream.map((x) => x * 2);         // 转换每个数据
+stream.where((x) => x.isEven);    // 条件过滤
+stream.distinct();                 // 连续去重
+stream.take(3);                    // 取前3个
+stream.skip(2);                    // 跳过前2个
+stream.timeout(Duration(seconds: 1));  // 超时
+stream.transform(transformer);    // 自定义转换器
+stream.asBroadcastStream();       // 转广播流（多监听）
+Stream.fromIterable(list);        // Iterable → Stream
+Stream.fromFuture(future);        // Future → Stream
+Stream.periodic(duration, fn);    // 周期性产生数据
+```
+
+**对比：Stream vs Iterable 的共有方法**
+
+| 方法 | Stream | Iterable |
+|------|--------|----------|
+| `map` | ✅ | ✅ |
+| `where` | ✅ | ✅ |
+| `take`/`skip` | ✅ | ✅ |
+| `distinct` | ✅ | ❌ |
+| `timeout` | ✅ | ❌ |
+| `transform` | ✅ | ❌ |
+
+**广播流 vs 单播流：**
+```dart
+// 单播流（默认）— 只能一个监听者
+var s = Stream.fromIterable([1, 2, 3]);
+s.listen(print);  // ✅
+s.listen(print);  // ❌ 报错
+
+// 广播流 — 多个监听者
+var b = Stream.fromIterable([1, 2, 3]).asBroadcastStream();
+b.listen((d) => print('A: $d'));
+b.listen((d) => print('B: $d'));  // ✅ 没问题
+```
+
+**实用模式：throttle 节流（限流）**
+```dart
+// 每 500ms 取最新一个数据
+Stream<T> throttle<T>(Stream<T> source, Duration d) {
+  var c = StreamController<T>();
+  var lastEvent = DateTime.now().subtract(d);
+  source.listen((data) {
+    if (DateTime.now().difference(lastEvent) >= d) {
+      c.add(data);
+      lastEvent = DateTime.now();
+    }
+  }, onDone: () => c.close());
+  return c.stream;
+}
+```
+
+**注意：**
+- 单播 Stream **只能监听一次**，多用 `.asBroadcastStream()`
+- `Stream.periodic` 无限产生数据，记得用 `take` 限制
+- `transform` 可以组合多个操作（map + where + ...）
+- `throttle`（节流）适合滚动事件，`debounce`（防抖）适合输入框
+
+---
+
 ## 第46课：DateTime 日期时间处理
 
 ```dart
