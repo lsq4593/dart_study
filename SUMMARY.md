@@ -2390,6 +2390,53 @@ runZoned(
 
 ---
 
+## 第69课：目录操作（Directory / FileSystemEntity）
+
+```dart
+// 🏛️ dart:io API
+
+// 创建
+Directory(path).create();               // 单层
+Directory(path).create(recursive: true); // 多级
+
+// 判断
+Directory(path).exists();  // bool
+
+// 遍历
+dir.list();                     // 直接子项
+dir.list(recursive: true);      // 递归遍历（返回 Stream）
+
+// 增删改
+dir.rename(newPath);       // 重命名/移动
+dir.delete(recursive: t);  // 删除（非空目录需 recursive）
+
+// 系统目录
+Directory.current      // 当前工作目录
+Directory.systemTemp   // 临时目录
+
+// 监听变化
+dir.watch() → Stream<FileSystemEvent>  // 文件创建/修改/删除
+```
+
+**对比：文件 vs 目录**
+
+| 操作 | 文件 (File) | 目录 (Directory) |
+|------|-------------|------------------|
+| 读取 | `readAsString()` | `list()` |
+| 写入 | `writeAsString()` | `create()` |
+| 复制 | `copy()` | 手动递归实现 |
+| 删除 | `delete()` | `delete(recursive: true)` |
+| 判断存在 | `exists()` | `exists()` |
+
+**注意：**
+- 删除非空目录必须加 `recursive: true`
+- 创建多级目录必须加 `recursive: true`
+- `list()` 返回 `Stream<FileSystemEntity>`，用 `await for` 遍历
+- `watch()` 返回 `Stream<FileSystemEvent>`，记得 `cancel()`
+- 路径分隔符用 `Platform.pathSeparator` 跨平台
+
+---
+
 ## 第46课：DateTime 日期时间处理
 
 ```dart
