@@ -2437,6 +2437,55 @@ dir.watch() → Stream<FileSystemEvent>  // 文件创建/修改/删除
 
 ---
 
+## 第70课：泛型进阶 — 约束、多参数、协变
+
+```dart
+// 🏛️ dart:core API
+
+// 约束：T 必须是 num 的子类
+double sum<T extends num>(List<T> list) { ... }
+// sum<String>(...)  // ❌ 编译报错
+
+// 多参数
+class Pair<K, V> { ... }
+var p = Pair<String, int>('年龄', 25);
+
+// 泛型方法
+T? firstOrNull<T>(List<T> list) => list.isEmpty ? null : list.first;
+
+// 泛型接口
+abstract class Cache<T> {
+  T? get(String key);
+  void set(String key, T value);
+}
+class LocalCache<T> implements Cache<T> { ... }
+
+// covariant — 子类重写时缩小参数类型
+class Animal { void feed(covariant Animal a); }
+class Dog extends Animal { void feed(covariant Dog d); }
+
+// 泛型类型别名
+typedef Transformer<T, R> = R Function(T input);
+```
+
+**对比：基础泛型 vs 进阶泛型**
+
+| 概念 | 第19课（基础） | 第70课（进阶） |
+|------|---------------|---------------|
+| 约束 | 无，T 可以是任何类型 | `T extends num` 限制范围 |
+| 参数数量 | 1 个 | 多个 `Pair<K, V>` |
+| 作用位置 | 类上 | 类/方法/接口/typedef |
+| covariant | ❌ | ✅ 子类缩小参数类型 |
+| 类型别名 | ❌ | `typedef` + 泛型 |
+
+**注意：**
+- `extends` 约束后的泛型，可以用约束类型的方法（如 `.toDouble()`）
+- `covariant` 让子类可以缩小参数类型，但运行时会检查
+- 泛型在运行时**部分保留**（`List<int>` 能看到，但 `T` 本身不能直接获取）
+- `typedef` 支持泛型，给复杂函数类型起别名非常实用
+
+---
+
 ## 第46课：DateTime 日期时间处理
 
 ```dart
