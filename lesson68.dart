@@ -9,15 +9,18 @@ void main() {
   print('\n--- 1. runZoned：错误隔离 ---');
   // 🏛️ dart:async API — runZoned
 
-  runZoned(() {
-    // 在这个区域里抛出的错误，不会崩掉整个程序
-    print('  🌟 进入 Zone');
-    Future.delayed(const Duration(milliseconds: 200), () {
-      throw Exception('Zone 里的异步错误');
-    });
-  }, onError: (Object error, StackTrace stack) {
-    print('  ✅ onError 捕获到: $error');
-  });
+  runZoned(
+    () {
+      // 在这个区域里抛出的错误，不会崩掉整个程序
+      print('  🌟 进入 Zone');
+      Future.delayed(const Duration(milliseconds: 200), () {
+        throw Exception('Zone 里的异步错误');
+      });
+    },
+    onError: (Object error, StackTrace stack) {
+      print('  ✅ onError 捕获到: $error');
+    },
+  );
 
   awaitFuture('  Zone 外继续执行');
 
@@ -25,13 +28,16 @@ void main() {
   print('\n--- 2. runZonedGuarded：保护根区域 ---');
   // 🏛️ dart:async API — runZonedGuarded
 
-  runZonedGuarded(() {
-    // 这里面的所有错误都不会崩程序
-    throw Exception('根区域错误');
-    // 未捕获的异步错误也会被这里捕获
-  }, (Object error, StackTrace stack) {
-    print('  🛡️ 捕获: $error');
-  });
+  runZonedGuarded(
+    () {
+      // 这里面的所有错误都不会崩程序
+      throw Exception('根区域错误');
+      // 未捕获的异步错误也会被这里捕获
+    },
+    (Object error, StackTrace stack) {
+      print('  🛡️ 捕获: $error');
+    },
+  );
 
   // ========== 3. Zone.current — 获取当前 Zone ==========
   print('\n--- 3. Zone.current：当前 Zone ---');
@@ -54,18 +60,11 @@ void main() {
   print('\n--- 4. zoneValues：传递上下文 ---');
   // 🏛️ dart:async API — zoneValues
 
-  runZoned(
-    () {
-      // 从 Zone 里取出用户信息
-      var user = Zone.current['user'];
-      print('  🧑 当前用户: $user');
-    },
-    zoneValues: {
-      'user': '小明',
-      'token': 'abc123',
-      'isAdmin': true,
-    },
-  );
+  runZoned(() {
+    // 从 Zone 里取出用户信息
+    var token = Zone.current['token'];
+    print('  🧑 当前用户: $token');
+  }, zoneValues: {'user': '小明', 'token': 'abc123', 'isAdmin': true});
 
   // ========== 5. ZoneSpecification — 拦截操作 ==========
   print('\n--- 5. ZoneSpecification：拦截操作 ---');
@@ -77,11 +76,17 @@ void main() {
       parent.print(zone, '  [Zone日志] $line');
     },
     // 拦截 setTimeout / Timer
-    createTimer: (Zone self, ZoneDelegate parent, Zone zone, Duration duration,
-        void Function() f) {
-      print('  ⏰ 创建定时器: ${duration.inMilliseconds}ms');
-      return parent.createTimer(zone, duration, f);
-    },
+    createTimer:
+        (
+          Zone self,
+          ZoneDelegate parent,
+          Zone zone,
+          Duration duration,
+          void Function() f,
+        ) {
+          print('  ⏰ 创建定时器: ${duration.inMilliseconds}ms');
+          return parent.createTimer(zone, duration, f);
+        },
   );
 
   runZoned(() {
@@ -97,23 +102,26 @@ void main() {
   print('\n--- 6. 实用：全剧错误兜底 ---');
 
   // 在 main 最外层用 runZonedGuarded 包裹，防止任何未捕获异常崩溃
-  runZonedGuarded(() {
-    // 这里是主程序入口
-    print('  🚀 程序启动');
+  runZonedGuarded(
+    () {
+      // 这里是主程序入口
+      print('  🚀 程序启动');
 
-    // 模拟各种错误
-    Future.delayed(const Duration(milliseconds: 100), () {
-      throw FormatException('数据格式错误');
-    });
+      // 模拟各种错误
+      Future.delayed(const Duration(milliseconds: 100), () {
+        throw FormatException('数据格式错误');
+      });
 
-    Future.delayed(const Duration(milliseconds: 200), () {
-      throw TimeoutException('请求超时');
-    });
-  }, (Object error, StackTrace stack) {
-    print('  ❌ 未捕获错误: $error');
-    // 这里可以上报错误日志
-    print('  📮 错误已上报到服务器');
-  });
+      Future.delayed(const Duration(milliseconds: 200), () {
+        throw TimeoutException('请求超时');
+      });
+    },
+    (Object error, StackTrace stack) {
+      print('  ❌ 未捕获错误: $error');
+      // 这里可以上报错误日志
+      print('  📮 错误已上报到服务器');
+    },
+  );
 
   awaitFuture('  等待异步错误触发');
 
@@ -128,7 +136,9 @@ void main() {
     print('  [请求 $requestId] 开始 $api');
 
     return Future.delayed(const Duration(milliseconds: 300), () {
-      print('  [请求 $requestId] 结束 $api（耗时 ${DateTime.now().difference(startTime).inMilliseconds}ms）');
+      print(
+        '  [请求 $requestId] 结束 $api（耗时 ${DateTime.now().difference(startTime).inMilliseconds}ms）',
+      );
       return '$api 结果';
     });
   }
