@@ -11,8 +11,12 @@ void loadConfig(void Function(String) onOk, void Function(Object) onErr) {
   Future.delayed(Duration(milliseconds: 500), () => onOk('config: {darkMode: true}'));
 }
 Future<String> loadConfigAsync() {
-  // TODO: 用 Completer 包装
-  throw UnimplementedError();
+  final completer = Completer<String>();
+  loadConfig(
+    (config) => completer.complete(config),
+    (error) => completer.completeError(error),
+  );
+  return completer.future;
 }
 
 // 2. 用 Future.wait 同时加载用户信息和配置信息
@@ -25,26 +29,36 @@ Future<String> fetchConfig() async {
   return '配置信息';
 }
 Future<(String, String)> loadAll() async {
-  // TODO: 用 Future.wait 并行加载
-  throw UnimplementedError();
+  final results = await Future.wait([fetchUser(), fetchConfig()]);
+  return (results[0], results[1]);
 }
 
 // 3. 用 Stream.periodic 做一个倒计时 Stream，到 0 时结束
 Stream<int> countdown(int seconds) {
-  // TODO: 实现
-  throw UnimplementedError();
+  return Stream.periodic(
+    const Duration(seconds: 1),
+    (count) => seconds - count,
+  ).take(seconds + 1);
 }
 
 // 4. 用 StreamController 手动控制流（发出 3 条消息后关闭）
 Stream<String> createMessageStream() {
-  // TODO: 实现
-  throw UnimplementedError();
+  final controller = StreamController<String>();
+  controller.add('消息1');
+  controller.add('消息2');
+  controller.add('消息3');
+  controller.close();
+  return controller.stream;
 }
 
 // 5. 用 Isolate 计算斐波那契数列（不阻塞主线程）
-Future<int> fibonacciInIsolate(int n) async {
-  // TODO: 用 Isolate.run 实现
-  throw UnimplementedError();
+Future<int> fibonacciInIsolate(int n) {
+  return Isolate.run(() => fibonacci(n));
+}
+
+int fibonacci(int n) {
+  if (n <= 1) return n;
+  return fibonacci(n - 1) + fibonacci(n - 2);
 }
 
 // 6. 用 Timer.periodic 实现每隔 1 秒打印一次当前时间，共 5 次
@@ -69,5 +83,14 @@ void main() async {
   print('5. fib(40) = $fib');
   
   print('6. 定时器:');
-  // TODO: Timer.periodic 打印时间 5 次
+  var count = 0;
+  final done = Completer<void>();
+  Timer.periodic(const Duration(seconds: 1), (timer) {
+    print('   ${DateTime.now()}');
+    if (++count >= 5) {
+      timer.cancel();
+      done.complete();
+    }
+  });
+  await done.future;
 }

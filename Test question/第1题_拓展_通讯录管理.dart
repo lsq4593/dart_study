@@ -12,7 +12,12 @@ void main() {
   // 至少预置 4 个联系人
 
   // TODO: 创建 contacts 列表
-  List<Map<String, String>> contacts = [];
+  List<Map<String, String>> contacts = [
+    {'name': '小明', 'phone': '13800138001', 'email': 'xiaoming@example.com'},
+    {'name': '小红', 'phone': '13800138002', 'email': 'xiaohong@example.com'},
+    {'name': '小刚', 'phone': '13800138003', 'email': 'xiaogang@example.com'},
+    {'name': '小丽', 'phone': '13800138004', 'email': 'xiaoli@example.com'},
+  ];
 
   // ====== 第2步：打印通讯录 ======
   // 写一个函数 void printContacts(List<Map<String, String>> contacts)
@@ -21,7 +26,10 @@ void main() {
 
   // TODO: 实现 printContacts 函数
   void printContacts(List<Map<String, String>> contacts) {
-    // 你的代码
+    for (int i = 0; i < contacts.length; i++) {
+      var c = contacts[i];
+      print('${i + 1}. ${c['name']} | 电话: ${c['phone']} | 邮箱: ${c['email']}');
+    }
   }
 
   print('--- 当前通讯录 ---');
@@ -33,11 +41,12 @@ void main() {
 
   // TODO: 实现 addContact 函数
   void addContact(List<Map<String, String>> contacts, String name, String phone, String email) {
-    // 你的代码
+    contacts.add({'name': name, 'phone': phone, 'email': email});
   }
 
   print('\n--- 添加联系人 ---');
-  // 添加小文和小强
+  addContact(contacts, '小文', '13800138005', 'xiaowen@example.com');
+  addContact(contacts, '小强', '13800138006', 'xiaoqiang@example.com');
 
   // ====== 第4步：按姓名搜索 ======
   // 写一个函数 List<Map<String, String>> searchByName(List<Map<String, String>> contacts, String keyword)
@@ -45,7 +54,13 @@ void main() {
 
   // TODO: 实现 searchByName 函数
   List<Map<String, String>> searchByName(List<Map<String, String>> contacts, String keyword) {
-    return []; // 替换这行
+    List<Map<String, String>> results = [];
+    for (var c in contacts) {
+      if (c['name']!.contains(keyword)) {
+        results.add(c);
+      }
+    }
+    return results;
   }
 
   print('\n--- 搜索联系人 (关键字: 小) ---');
@@ -60,7 +75,13 @@ void main() {
 
   // TODO: 实现 removeContact 函数
   bool removeContact(List<Map<String, String>> contacts, String name) {
-    return false; // 替换这行
+    for (int i = 0; i < contacts.length; i++) {
+      if (contacts[i]['name'] == name) {
+        contacts.removeAt(i);
+        return true;
+      }
+    }
+    return false;
   }
 
   print('\n--- 删除联系人 ---');
@@ -75,7 +96,14 @@ void main() {
 
   // TODO: 实现 updateContact 函数
   bool updateContact(List<Map<String, String>> contacts, String name, {String? newPhone, String? newEmail}) {
-    return false; // 替换这行
+    for (var c in contacts) {
+      if (c['name'] == name) {
+        if (newPhone != null) c['phone'] = newPhone;
+        if (newEmail != null) c['email'] = newEmail;
+        return true;
+      }
+    }
+    return false;
   }
 
   print('\n--- 更新联系人 ---');
@@ -87,8 +115,8 @@ void main() {
   // 用三元运算符打印"有 X 位联系人"或"通讯录为空"
 
   // TODO: 统计并打印
-  int count = 0;
-  String msg = '';
+  int count = contacts.length;
+  String msg = count > 0 ? '有 $count 位联系人' : '通讯录为空';
   print('\n--- 统计 ---');
   print(msg);
 
