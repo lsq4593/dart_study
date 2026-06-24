@@ -1,0 +1,9 @@
+{"version":1,"sembast":1}
+{"key":1,"value":{"title":"学习Dart","content":"基础语法","createdAt":"2026-06-24T17:05:16.384875"}}
+{"key":2,"value":{"title":"购物清单","content":"苹果、牛奶","createdAt":"2026-06-24T17:05:16.395382"}}
+{"key":1,"value":{"title":"学Flutter","content":"已进阶到Flutter","createdAt":"2026-06-24T17:05:16.384875"}}
+{"key":2,"deleted":true}
+{"key":3,"value":{"title":"学习Dart","content":"基础语法","createdAt":"2026-06-24T17:14:28.231936"}}
+{"key":4,"value":{"title":"购物清单","content":"苹果、牛奶","createdAt":"2026-06-24T17:14:28.246409"}}
+{"key":3,"value":{"title":"学Flutter","content":"已进阶到Flutter","createdAt":"2026-06-24T17:14:28.231936"}}
+{"key":4,"deleted":true}

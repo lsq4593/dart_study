@@ -1,0 +1,29 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head><meta charset="UTF-8"><title>Dart 服务器</title>
+<style>body{font-family:sans-serif;max-width:600px;margin:50px auto;padding:0 20px}
+h1{color:#02569B}button{padding:8px 16px;margin:5px;cursor:pointer}
+pre{background:#f5f5f5;padding:10px;border-radius:4px}</style>
+</head>
+<body>
+<h1>Dart 静态服务</h1>
+<p>这个页面由 shelf_static 托管</p>
+<button onclick="fetchNotes()">获取备忘录列表</button>
+<button onclick="createNote()">创建备忘录</button>
+<pre id="result">点击按钮查看结果...</pre>
+<script>
+async function fetchNotes() {
+  const res = await fetch("/api/notes");
+  document.getElementById("result").textContent = await res.text();
+}
+async function createNote() {
+  const res = await fetch("/api/notes", {
+    method: "POST",
+    headers: {"Content-Type":"application/json"},
+    body: JSON.stringify({title:"新笔记",content:"来自前端"})
+  });
+  document.getElementById("result").textContent = await res.text();
+}
+</script>
+</body>
+</html>

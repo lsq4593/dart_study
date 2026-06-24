@@ -1,0 +1,23 @@
+[2026-06-24 16:33:18.570403] 启动: http://localhost:8080
+[2026-06-24 16:33:31.678600] GET 
+[2026-06-24 16:33:31.720787] GET hello
+[2026-06-24 16:33:31.745084] GET hello/%E5%B0%8F%E6%98%8E
+[2026-06-24 16:33:31.771473] GET search
+[2026-06-24 16:33:31.798207] POST data
+[2026-06-24 16:33:31.826497] GET users/42/posts
+[2026-06-24 16:33:31.849727] GET xyz
+[2026-06-24 16:42:40.457521] 启动: http://localhost:8080
+[2026-06-24 16:42:46.720117] GET 
+[2026-06-24 16:42:46.764276] GET .well-known/appspecific/com.chrome.devtools.json
+[2026-06-24 16:43:05.833160] GET hello
+[2026-06-24 16:43:05.865793] GET .well-known/appspecific/com.chrome.devtools.json
+[2026-06-24 16:43:23.585839] GET hello/%E7%8E%8B%E4%BC%9F
+[2026-06-24 16:43:23.611534] GET .well-known/appspecific/com.chrome.devtools.json
+[2026-06-24 16:43:48.042046] GET hello/%3C%E7%8E%8B%E4%BC%9F%3E
+[2026-06-24 16:43:48.072922] GET .well-known/appspecific/com.chrome.devtools.json
+[2026-06-24 16:43:57.971545] GET hello/%3Cwang%3E
+[2026-06-24 16:43:57.997215] GET .well-known/appspecific/com.chrome.devtools.json
+[2026-06-24 16:44:04.262727] GET hello/wangwei
+[2026-06-24 16:44:04.296403] GET .well-known/appspecific/com.chrome.devtools.json
+[2026-06-24 16:44:32.688957] GET search
+[2026-06-24 16:44:32.711665] GET .well-known/appspecific/com.chrome.devtools.json
