@@ -1,0 +1,7 @@
+﻿{
+    "git.autofetch": false,
+    "git.enableStatus": true,
+    "git.decorations.enabled": true,
+    "git.fetchOnPull": false,
+    "git.postCommitCommand": "none"
+}
